@@ -18,6 +18,9 @@ class Missions(Node):
             10
         )
         self.nav = BasicNavigator()
+        inital_pose= self.create_pose_stamped(0.0,0.0,0.0)
+        self.nav.setInitialPose(inital_pose)
+        self.get_logger().info("SET INITAL POSITION.")
 
     def create_pose_stamped(self, pose_x, pose_y, orientation_z):
         q_x, q_y, q_z, q_w = tf_transformations.quaternion_from_euler(0.0, 0.0, orientation_z)
@@ -35,15 +38,16 @@ class Missions(Node):
 
     def publish_goal_pose(self, pose):
         self.publisher.publish(pose)
-        self.get_logger().info("Goal pose published")
-
+ 
     def mission0(self):
-        goal_pose = self.create_pose_stamped(2.0, 0.0, 1.57)
+        goal_pose = self.create_pose_stamped(2.5, 0.0, 1.57)
         self.publish_goal_pose(goal_pose)
         self.get_logger().info("MISSION 0: Goal pose published")
-
+        
     def mission1(self):
         print("MISSION 1 TAG DETECT")
+
+
 
 class AprilTagDetector(Node):
     def __init__(self):
@@ -56,6 +60,7 @@ class AprilTagDetector(Node):
         self.bridge = CvBridge()
         self.tag_detector = Detector()
         self.missions = Missions()
+        self.pose_publish_FLAG = False
 
     def image_callback(self, msg):
         cv_image = self.bridge.imgmsg_to_cv2(msg, "bgr8")
@@ -64,13 +69,15 @@ class AprilTagDetector(Node):
 
         for tag in detections:
             tag_id = tag.tag_id
-            print(tag_id)
 
-            if tag_id == 0:
+            if tag_id == 0 and self.pose_publish_FLAG == False:
+                print("TAG ID: ",tag_id)
+                self.pose_publish_FLAG=True
                 self.missions.mission0()
 
-            elif tag_id == 1:
+            if tag_id == 1:
                 self.missions.mission1()
+
 
 def main(args=None):
     rclpy.init(args=args)
@@ -82,4 +89,5 @@ def main(args=None):
     rclpy.shutdown()
 
 if __name__ == '__main__':
+    
     main()
